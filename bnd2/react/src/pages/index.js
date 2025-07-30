@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { memo, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import classnames from 'classnames'
+// Optimize Material-UI imports for better tree shaking
 import Table from '@material-ui/core/Table'
 import TableBody from '@material-ui/core/TableBody'
 import TableCell from '@material-ui/core/TableCell'
@@ -15,11 +16,12 @@ import DialogActions from '@material-ui/core/DialogActions'
 import DialogContent from '@material-ui/core/DialogContent'
 import DialogContentText from '@material-ui/core/DialogContentText'
 import DialogTitle from '@material-ui/core/DialogTitle'
-import SaveAltIcon from '@material-ui/icons/SaveAlt'
-import FolderIcon from '@material-ui/icons/Folder'
 import AppBar from '@material-ui/core/AppBar'
 import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
+// Optimize icon imports
+import SaveAltIcon from '@material-ui/icons/SaveAlt'
+import FolderIcon from '@material-ui/icons/Folder'
 import { clearCookie } from '../utils/clearCookie'
 
 export default class Index extends React.Component {

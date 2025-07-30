@@ -1,12 +1,13 @@
 const {app, BrowserWindow, Menu, session} = require('electron')
 const {isDev, initIpcMain} = require('./src/utils')
+const path = require('path')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 
 const createWindow = () => {
-  // Create the browser window.
+  // Create the browser window with optimized settings
   mainWindow = new BrowserWindow(
     {
       width: 1024,
@@ -14,28 +15,45 @@ const createWindow = () => {
       resizable: false,
       maximizable: false,
       title: 'BND2',
+      show: false, // Don't show until ready to prevent flash
       webPreferences: {
-        nodeIntegration: true,
+        nodeIntegration: false, // Disable for security
+        contextIsolation: true, // Enable for security
+        enableRemoteModule: false, // Disable for security and performance
+        webSecurity: true,
+        sandbox: false,
         webviewTag: true,
+        backgroundThrottling: false, // Prevent throttling when hidden
+        preload: path.join(__dirname, 'preload.js') // Use preload script
       },
     })
+
+  // Optimize window loading
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+    
+    // Focus window on show for better UX
+    if (isDev()) {
+      mainWindow.webContents.openDevTools()
+    }
+  })
 
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')
 
-  // Open the DevTools.
-  if (isDev()) {
-    mainWindow.webContents.openDevTools()
-  }
-
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
+    // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    // Dereference the window object, usually you would store windows
     mainWindow = null
   })
 
+  // Optimize memory usage
+  mainWindow.on('minimize', () => {
+    // Optional: Reduce memory usage when minimized
+    mainWindow.webContents.executeJavaScript('window.gc && window.gc()')
+  })
 }
 
 const createMenu = () => {
