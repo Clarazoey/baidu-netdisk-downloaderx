@@ -14,8 +14,9 @@ import Snackbar from '@material-ui/core/Snackbar'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import Toolbar from '@material-ui/core/Toolbar'
 import AppBar from '@material-ui/core/AppBar'
-import Divider from '@material-ui/core/Divider'
 import echarts from 'echarts/lib/echarts'
+import 'echarts/lib/chart/line'
+import 'echarts/lib/component/tooltip'
 import { openURL } from '../utils/openURL'
 import { clearCookie } from '../utils/clearCookie'
 import fetchJsonp from 'fetch-jsonp'
@@ -23,9 +24,6 @@ import Table from '@material-ui/core/Table'
 import TableBody from '@material-ui/core/TableBody'
 import TableRow from '@material-ui/core/TableRow'
 import TableCell from '@material-ui/core/TableCell'
-
-require('echarts/lib/chart/line')
-require('echarts/lib/component/tooltip')
 
 export default class Welcome extends React.Component {
   state = {

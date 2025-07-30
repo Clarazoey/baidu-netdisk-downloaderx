@@ -1,26 +1,39 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { BrowserRouter, Route, Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import classnames from 'classnames'
+// Optimize Material-UI imports
 import Drawer from '@material-ui/core/Drawer'
 import Badge from '@material-ui/core/Badge'
-import { withStyles } from '@material-ui/core/styles'
 import List from '@material-ui/core/List'
 import Divider from '@material-ui/core/Divider'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
+import CircularProgress from '@material-ui/core/CircularProgress'
+import { withStyles } from '@material-ui/core/styles'
+// Optimize icon imports
 import InboxIcon from '@material-ui/icons/MoveToInbox'
 import AllInboxIcon from '@material-ui/icons/AllInbox'
 import DoneOutlineIcon from '@material-ui/icons/DoneOutline'
 import ChartIcon from '@material-ui/icons/BubbleChart'
 import FavoriteIcon from '@material-ui/icons/FavoriteBorder'
 import withRoot from './withRoot'
-import Index from './pages/index'
-import Downloading from './pages/downloading'
-import Finished from './pages/finished'
-import Donate from './pages/donate'
-import Welcome from './pages/welcome'
 import styles from './styles'
+import { dedupeWSMessage } from './utils/cache'
+
+// Lazy load page components for code splitting
+const Index = React.lazy(() => import('./pages/index'))
+const Downloading = React.lazy(() => import('./pages/downloading'))
+const Finished = React.lazy(() => import('./pages/finished'))
+const Donate = React.lazy(() => import('./pages/donate'))
+const Welcome = React.lazy(() => import('./pages/welcome'))
+
+// Loading component
+const LoadingSpinner = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+    <CircularProgress />
+  </div>
+)
 
 class App extends React.Component {
   state = {
@@ -33,34 +46,60 @@ class App extends React.Component {
 
   componentDidMount () {
     window.rws.send(JSON.stringify({cmd: 'counttasks', param: {}}))
-    window.rws.onmessage = (evt) => {
-      const data = JSON.parse(evt.data)
-      if (data.cmd === 'counttasks') {
-        this.setState({
-          count: data.data.taskCount,
-        })
+    
+    // Optimize WebSocket message handling with switch statement and deduplication
+    const handleWebSocketMessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data)
+        
+        // Skip duplicate messages to reduce unnecessary re-renders
+        if (!dedupeWSMessage(data)) {
+          return
+        }
+        
+        switch (data.cmd) {
+          case 'counttasks':
+            this.setState({
+              count: data.data.taskCount,
+            })
+            break
+          case 'statistic':
+            this.setState({
+              welcomeData: data,
+            })
+            break
+          case 'lstasks':
+            this.setState({
+              downloadingData: data,
+            })
+            break
+          case 'traverse':
+          case 'ls':
+            this.setState({
+              indexData: data,
+            })
+            break
+          case 'lsctasks':
+            this.setState({
+              finishedData: data,
+            })
+            break
+          default:
+            // Handle unknown commands gracefully
+            console.warn('Unknown WebSocket command:', data.cmd)
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error)
       }
-      if (data.cmd === 'statistic') {
-        this.setState({
-          welcomeData: data,
-        })
-      }
-      if (data.cmd === 'lstasks') {
-        this.setState({
-          downloadingData: data,
-        })
-      }
-      if (data.cmd === 'traverse' || data.cmd === 'ls') {
-        this.setState({
-          indexData: data,
-        })
-      }
-      if (data.cmd === 'lsctasks') {
-        this.setState({
-          finishedData: data,
-        })
-      }
-
+    }
+    
+    window.rws.onmessage = handleWebSocketMessage
+  }
+  
+  componentWillUnmount() {
+    // Clean up WebSocket listener to prevent memory leaks
+    if (window.rws && window.rws.onmessage) {
+      window.rws.onmessage = null
     }
   }
 
@@ -156,20 +195,30 @@ class App extends React.Component {
           </Drawer>
           <main className={classes.content}>
             <Route path="/" exact render={props => (
-              <Welcome classes={classes} rwsData={this.state.welcomeData}/>
+              <Suspense fallback={<LoadingSpinner />}>
+                <Welcome classes={classes} rwsData={this.state.welcomeData}/>
+              </Suspense>
             )}/>
             <Route path="/index" render={props => (
-              <Index classes={classes} rwsData={this.state.indexData}/>
+              <Suspense fallback={<LoadingSpinner />}>
+                <Index classes={classes} rwsData={this.state.indexData}/>
+              </Suspense>
             )}/>
             <Route path="/downloading" render={props => (
-              <Downloading classes={classes}
+              <Suspense fallback={<LoadingSpinner />}>
+                <Downloading classes={classes}
                            rwsData={this.state.downloadingData}/>
+              </Suspense>
             )}/>
             <Route path="/finished" render={props => (
-              <Finished classes={classes} rwsData={this.state.finishedData}/>
+              <Suspense fallback={<LoadingSpinner />}>
+                <Finished classes={classes} rwsData={this.state.finishedData}/>
+              </Suspense>
             )}/>
             <Route path="/donate" render={props => (
-              <Donate classes={classes}/>
+              <Suspense fallback={<LoadingSpinner />}>
+                <Donate classes={classes}/>
+              </Suspense>
             )}/>
           </main>
         </div>

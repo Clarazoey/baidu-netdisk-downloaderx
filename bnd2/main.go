@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/88250/gulu"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,6 +9,8 @@ import (
 
 	"github.com/88250/bnd2/command"
 	"github.com/88250/bnd2/util"
+	"github.com/88250/gulu"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/olahol/melody.v1"
 )
@@ -18,8 +18,6 @@ import (
 var logger *gulu.Logger
 
 func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-
 	gulu.Log.SetLevel("error")
 	logger = gulu.Log.NewLogger(os.Stdout)
 
@@ -33,15 +31,33 @@ func init() {
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+	
+	// Performance middleware
 	r.Use(gin.Recovery())
+	r.Use(gzip.Gzip(gzip.DefaultCompression)) // Enable gzip compression
+	r.Use(func(c *gin.Context) {
+		// Add performance headers
+		c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "0")
+		c.Next()
+	})
 
+	// Optimize status endpoint with caching
+	var cachedStatus []byte
+	var statusCacheTime time.Time
 	r.GET("/status", func(c *gin.Context) {
-		result := util.NewResult()
-		defer c.JSON(http.StatusOK, result)
-
-		result.Data = map[string]interface{}{
-			"version": util.Ver,
+		// Simple caching for status endpoint (5 second cache)
+		if time.Since(statusCacheTime) > 5*time.Second || cachedStatus == nil {
+			result := util.NewResult()
+			result.Data = map[string]interface{}{
+				"version": util.Ver,
+				"timestamp": time.Now().Unix(),
+			}
+			cachedStatus, _ = json.Marshal(result)
+			statusCacheTime = time.Now()
 		}
+		c.Data(http.StatusOK, "application/json", cachedStatus)
 	})
 
 	m := melody.New()

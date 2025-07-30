@@ -6,9 +6,11 @@
   "license": "MIT",
   "scripts": {
     "start": "cross-env NODE_ENV=development electron --inspect=5858 .",
+    "start:prod": "cross-env NODE_ENV=production electron .",
     "mock": "apimocker --config ../mock/mock.json",
     "pack": "electron-builder --dir",
-    "dist": "cross-env ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder"
+    "dist": "cross-env ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder",
+    "dist:optimized": "cross-env NODE_ENV=production ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder"
   },
   "productName": "BND2",
   "repository": "https://github.com/88250/baidu-netdisk-downloaderx",
@@ -29,6 +31,25 @@
     "ssl-root-cas": "^1.3.1"
   },
   "build": {
-    "appId": "org.b3log.bnd2"
+    "appId": "org.b3log.bnd2",
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!node_modules/*.d.ts",
+      "!node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ]
   }
 }
